@@ -20,24 +20,14 @@ import Navigation from "../../components/Navigation"
 import { useWallet } from '../../context/WalletContext'
 
 const networks = {
-  polkadot: {
-    name: 'Polkadot',
-    icon: SimpleIcons.siPolkadot,
-    color: '#E6007A',
-    bgColor: 'from-pink-500',
-  },
+ 
   ethereum: {
     name: 'Ethereum',
     icon: SimpleIcons.siEthereum,
     color: '#627EEA',
     bgColor: 'from-blue-500',
   },
-  polygon: {
-    name: 'Polygon',
-    icon: SimpleIcons.siPolygon,
-    color: '#8247E5',
-    bgColor: 'from-purple-500',
-  },
+ 
   ton: {
     name: 'TON',
     icon: SimpleIcons.siTon,
