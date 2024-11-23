@@ -84,8 +84,10 @@ export default function Navigation() {
                   {item.name}
                 </Link>
               ))}
+              
             </div>
           </div>
+
 
           <div className="flex items-center gap-4">
             {/* Wallet Connection - Only show on /app page */}

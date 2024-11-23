@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import OctopusBackground from './OctopusBackground'
-import { useNavigate } from "react-router-dom"
+import { navigateTo, navigateToExternal } from "@/lib/navigation"
 
 const FloatingBubbles = () => {
   const bubbles = Array.from({ length: 20 }).map((_, i) => ({
@@ -42,8 +42,6 @@ const FloatingBubbles = () => {
 }
 
 export default function Component() {
-  const navigate = useNavigate();
-
   return (
     <div className="relative min-h-screen bg-white/90 text-gray-900 p-8">
       <OctopusBackground />
@@ -109,14 +107,25 @@ export default function Component() {
               Bridge!
             </h2>
             <div className="flex flex-col gap-2">
-              <Button onClick={() => navigate('/app')} className="bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700">
+              <Button 
+                onClick={() => navigateTo('/app')} 
+                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
+              >
                 Start Bridging
               </Button>
               <div className="flex gap-2">
-                <Button onClick={() => window.open('https://tonify.gitbook.io', '_blank')} variant="outline" className="flex-1">
+                <Button 
+                  onClick={() => navigateToExternal('https://tonify.gitbook.io')} 
+                  variant="outline" 
+                  className="flex-1"
+                >
                   Docs
                 </Button>
-                <Button onClick={() => window.open('https://tonify.gitbook.io', '_blank')} variant="outline" className="flex-1">
+                <Button 
+                  onClick={() => navigateToExternal('https://tonify.gitbook.io')} 
+                  variant="outline" 
+                  className="flex-1"
+                >
                   Learn More
                 </Button>
               </div>

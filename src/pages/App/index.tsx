@@ -65,7 +65,7 @@ type NetworkType = keyof typeof networks
 type TokenType = keyof typeof tokens
 
 export default function AppPage() {
-  const { evmAddress, tonAddress, tonAddressFormatted, evmBalance, tonBalance, walletType, isConnected, disconnect } = useWallet()
+  const { evmAddress, tonAddress, tonAddressFormatted, evmBalance, tonBalance, walletType, isConnected } = useWallet()
   
   const [enableRefuel, setEnableRefuel] = useState(false)
   const [bridgeAndTransfer, setBridgeAndTransfer] = useState(false)

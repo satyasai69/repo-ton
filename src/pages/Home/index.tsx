@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
 import { useWallet } from "../../context/WalletContext"
@@ -13,15 +12,14 @@ import HowTo from "../../components/HowTo"
 import Cards from "../../components/Cards"
 import CallToAction from "../../components/CallToAction"
 import Navigation from "@/components/Navigation"
-import { Button } from "@/components/ui/button"
 
 export default function Component() {
 
-  const navigate = useNavigate();
   const { isConnected, evmAddress, tonAddress, evmBalance, tonBalance, walletType } = useWallet();
   const [waves, setWaves] = useState<Array<{top: number, left: number}>>([]);
 
   useEffect(() => {
+    console.log('Home component mounted');
     setWaves(
       [...Array(8)].map(() => ({
         top: Math.random() * 100,
@@ -92,10 +90,10 @@ export default function Component() {
           {/* Contribute Banner */}
           <div className="flex justify-center mb-4">
             <Link 
-            to="/"
+            to="/app"
               className="group flex items-center space-x-2 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-full text-sm transition-colors"
             >
-              <span className="text-blue-900">Contribute to Tonify To Make Ton Great</span>
+              <span className="text-blue-900">Take me to Bridge</span>
               <motion.span 
                 className="text-blue-500"
                 animate={{ x: [0, 5, 0] }}
@@ -128,25 +126,13 @@ export default function Component() {
             First-ever zkSync integration for TON blockchain. Bridge your tokens securely and instantly with zero-knowledge proofs.
           </p>
           <div className="mt-10 flex justify-center gap-x-6">
-            <Button onClick={() => navigate('/app')}
-              className="bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
-              size="lg"
-            >
-             Start briding
-            </Button>
-            <Button onClick={() => window.open('https://tonify.gitbook.io', '_blank')}
-              variant="outline"
-              size="lg"
-              className="text-blue-600 border-blue-600 hover:bg-blue-50"
-            >
-             Learn More
-            </Button>
+           
           </div>
         </div>
       </div>
       </main>
 
-      
+    
 
       <div className="relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

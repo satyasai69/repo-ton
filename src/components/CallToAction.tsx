@@ -1,5 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import { navigateTo } from "@/lib/navigation";
 import StarsImage from '../assets/stars.png' 
 import GridLines from '../assets/grid-lines.png'
 import OctopusBackground from './OctopusBackground'
@@ -12,6 +13,15 @@ import {
 import { useRef } from "react";
 import useRelativeMousePosition from "@/hooks/useRelativeMousePosition";
 
+interface ImageModule {
+  src: string;
+  width?: number;
+  height?: number;
+}
+
+function isImageModule(img: string | ImageModule): img is ImageModule {
+  return typeof img !== 'string' && 'src' in img;
+}
 
 export default function CallToAction() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -32,11 +42,11 @@ export default function CallToAction() {
 
   const style = {
     starsContainer: {
-      backgroundImage: `url(${StarsImage})`,
+      backgroundImage: `url(${isImageModule(StarsImage) ? StarsImage.src : StarsImage})`,
       backgroundPositionX: 0,
     },
     gridContainer: {
-      backgroundImage: `url(${GridLines})`,
+      backgroundImage: `url(${isImageModule(GridLines) ? GridLines.src : GridLines})`,
     }
   }
 
@@ -56,7 +66,7 @@ export default function CallToAction() {
         <motion.div
           ref={borderedDivRef}
           animate={{
-            backgroundPositionX: StarsImage.width,
+            backgroundPositionX: isImageModule(StarsImage) ? StarsImage.width || 0 : 0,
           }}
           transition={{
             repeat: Infinity,
@@ -65,21 +75,21 @@ export default function CallToAction() {
           }}
           style={{
             backgroundPositionY,
-            backgroundImage: `url(${StarsImage.src})`,
+            backgroundImage: style.starsContainer.backgroundImage,
           }}
           className="relative py-24 border border-white/10 rounded-xl overflow-hidden group bg-black/80 backdrop-blur-sm"
         >
           <div
             className="absolute inset-0 bg-[rgb(124,58,237)] bg-blend-overlay [mask-image:radial-gradient(50%_50%_at_50%_35%,black,transparent)] group-hover:opacity-0 transition duration-700"
             style={{
-              backgroundImage: `url(${GridLines.src})`,
+              backgroundImage: style.gridContainer.backgroundImage,
             }}
           ></div>
           <motion.div
             className="absolute inset-0 bg-gradient-to-br from-purple-600 to-blue-500 bg-blend-overlay opacity-0 group-hover:opacity-100 transition duration-700"
             style={{
               maskImage,
-              backgroundImage: `url(${GridLines.src})`,
+              backgroundImage: style.gridContainer.backgroundImage,
             }}
           ></motion.div>
           <div className="relative">
@@ -90,7 +100,10 @@ export default function CallToAction() {
               First-ever zkSync integration for TON blockchain. Experience secure, instant transfers.
             </p>
             <div className="flex justify-center mt-8">
-              <Button  onClick={() => window.location.href = '/app'}  className="bg-gradient-to-r from-purple-600 to-blue-500 text-white hover:from-purple-700 hover:to-blue-600">
+              <Button 
+                onClick={() => navigateTo('/app')} 
+                className="bg-gradient-to-r from-purple-600 to-blue-500 text-white hover:from-purple-700 hover:to-blue-600"
+              >
                 Try Tonify Bridge
               </Button>
             </div>
