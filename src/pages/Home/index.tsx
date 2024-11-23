@@ -123,7 +123,7 @@ export default function Component() {
             for TON Blockchain
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg tracking-tight text-slate-700">
-            First-ever zkSync integration for TON blockchain. Bridge your tokens securely and instantly with zero-knowledge proofs.
+            First-ever zero-knowledge bridge for TON blockchain. Bridge your tokens securely and instantly with zk-SNARK proofs.
           </p>
           <div className="mt-10 flex justify-center gap-x-6">
            
@@ -150,7 +150,7 @@ export default function Component() {
                       <span className="absolute -inset-px rounded-xl" />
                     </h2>
                     <p className="mt-1 text-sm text-slate-700">
-                      Leverage zkSync's zero-knowledge proofs for secure and private cross-chain transfers
+                      Leverage zero-knowledge proofs for secure and private cross-chain transfers
                     </p>
                   </div>
                 </Card>
@@ -165,7 +165,7 @@ export default function Component() {
                       <span className="absolute -inset-px rounded-xl" />
                     </h2>
                     <p className="mt-1 text-sm text-slate-700">
-                      Experience near-instant transfers with zkSync's advanced rollup technology
+                      Experience near-instant transfers with zk-SNARK rollup technology
                     </p>
                   </div>
                 </Card>
@@ -180,7 +180,7 @@ export default function Component() {
                       <span className="absolute -inset-px rounded-xl" />
                     </h2>
                     <p className="mt-1 text-sm text-slate-700">
-                      Minimize transaction costs with efficient zkSync scaling solution
+                      Minimize transaction costs with efficient zero-knowledge scaling solution
                     </p>
                   </div>
                 </Card>
