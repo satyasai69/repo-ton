@@ -32,20 +32,7 @@ export default function Component() {
     <>
     <Navigation />
     <div className="min-h-screen bg-white text-gray-900 overflow-hidden">
-      {isConnected && (
-        <Card className="mx-auto max-w-2xl mt-4 p-6">
-          <div className="flex flex-col items-center space-y-2">
-            <h2 className="text-xl font-semibold">Connected Wallet</h2>
-            <p className="text-sm text-gray-500">{walletType === 'evm' ? 'Ethereum' : 'TON'} Wallet</p>
-            <p className="font-mono bg-gray-100 rounded-lg px-4 py-2">
-              {walletType === 'evm' ? evmAddress : tonAddress}
-            </p>
-            <p className="text-sm">
-              Balance: <span className="font-semibold">{walletType === 'evm' ? evmBalance : tonBalance}</span>
-            </p>
-          </div>
-        </Card>
-      )}
+
 
 
       <main className="relative pt-32 pb-16">

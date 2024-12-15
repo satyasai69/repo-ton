@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // @ts-ignore
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTonConnectUI } from '@tonconnect/ui-react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { motion, AnimatePresence } from 'framer-motion'
 import * as SimpleIcons from 'simple-icons'
 import { useWallet } from '../context/WalletContext'
 import { LogOut, Menu, X } from 'lucide-react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 const wallets = {
   ethereum: {
@@ -30,62 +30,28 @@ const navItems = [
 ]
 
 export default function Navigation() {
-  const { evmAddress, tonAddressFormatted, walletType, disconnect } = useWallet()
+  const { isConnected, evmAddress, tonAddressFormatted, walletType, disconnect } = useWallet()
   const [tonConnectUI] = useTonConnectUI()
   const [isOpen, setIsOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isConnected, setIsConnected] = useState(false)
   const location = useLocation()
-  const navigate = useNavigate()
-  const isAppPage = location.pathname.startsWith('/app')
+  const isAppPage = location.pathname === '/app'
 
-  useEffect(() => {
-    const checkConnection = () => {
-      if (tonConnectUI.connected) {
-        setIsConnected(true)
-        setIsOpen(false)
-        navigate('/app')
-      } else {
-        setIsConnected(false)
-      }
-    }
-
-    checkConnection()
-    const unsubscribe = tonConnectUI.onStatusChange(checkConnection)
-    return () => {
-      if (unsubscribe) unsubscribe()
-    }
-  }, [tonConnectUI, navigate])
-
-  const handleDisconnect = async () => {
-    try {
-      if (walletType === 'ton') {
-        await tonConnectUI.disconnect()
-      } else {
-        disconnect()
-      }
-      setIsOpen(false)
-      setIsConnected(false)
-      navigate('/')
-    } catch (error) {
-      console.error('Disconnect failed:', error)
-    }
+  const handleDisconnect = () => {
+    disconnect?.()
+    setIsOpen(false)
   }
 
-  const handleTonConnect = async () => {
-    try {
-      await tonConnectUI.openModal()
-      setIsOpen(false)
-    } catch (error) {
-      console.error('Connection failed:', error)
-    }
+  const handleTonConnect = () => {
+    tonConnectUI.openModal()
+    setIsOpen(false)
   }
 
   const getDisplayAddress = () => {
     if (walletType === 'ton') {
-      return tonAddressFormatted ? `${tonAddressFormatted.slice(0, 4)}...${tonAddressFormatted.slice(-4)}` : ''
+      return tonAddressFormatted ? `${tonAddressFormatted.slice(0, 6)}...${tonAddressFormatted.slice(-4)}` : ''
     }
-    return evmAddress ? `${evmAddress.slice(0, 4)}...${evmAddress.slice(-4)}` : ''
+    return evmAddress ? `${evmAddress.slice(0, 6)}...${evmAddress.slice(-4)}` : ''
   }
 
   const scrollToRoadmap = () => {
@@ -102,6 +68,7 @@ export default function Navigation() {
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-2">
               <img src="/images/logo.png" alt="Logo" className='w-20' />
+             
             </Link>
 
             {/* Desktop Navigation */}
@@ -135,17 +102,9 @@ export default function Navigation() {
                 ) : (
                   <button
                     onClick={() => setIsOpen(!isOpen)}
-                    className="flex items-center space-x-2 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-all border border-gray-200"
+                    className="px-4 py-2 rounded-lg bg-gray-100 text-gray-900 hover:bg-gray-200 transition-all hover:scale-105 border border-gray-200"
                   >
-                    <span>{getDisplayAddress()}</span>
-                    <svg 
-                      className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                    {getDisplayAddress()}
                   </button>
                 )}
 
@@ -163,24 +122,23 @@ export default function Navigation() {
                             <ConnectButton.Custom>
                               {({
                                 openConnectModal,
-                              }) => (
-                                <button
-                                  onClick={() => {
-                                    openConnectModal()
-                                    setIsOpen(false)
-                                  }}
-                                  className="flex items-center gap-2 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
-                                >
-                                  <div
-                                    dangerouslySetInnerHTML={{ 
-                                      __html: wallets.ethereum.icon.svg 
-                                    }}
-                                    style={{ color: wallets.ethereum.color }}
-                                    className="w-5 h-5"
-                                  />
-                                  <span>EVM</span>
-                                </button>
-                              )}
+                              }) => {
+                                return (
+                                  <button
+                                    onClick={openConnectModal}
+                                    className="flex items-center gap-2 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                                  >
+                                    <div
+                                      dangerouslySetInnerHTML={{ 
+                                        __html: wallets.ethereum.icon.svg 
+                                      }}
+                                      style={{ color: wallets.ethereum.color }}
+                                      className="w-5 h-5"
+                                    />
+                                    <span>EVM</span>
+                                  </button>
+                                )
+                              }}
                             </ConnectButton.Custom>
 
                             <button
@@ -199,12 +157,6 @@ export default function Navigation() {
                           </>
                         ) : (
                           <>
-                            <div className="px-4 py-2 border-b border-gray-100">
-                              <p className="text-xs text-gray-500">Connected Wallet</p>
-                              <p className="text-sm font-medium text-gray-900 break-all">
-                                {walletType === 'ton' ? tonAddressFormatted : evmAddress}
-                              </p>
-                            </div>
                             <a
                               href={`${walletType === 'ton' ? 'https://tonscan.org/address/' : 'https://etherscan.io/address/'}${
                                 walletType === 'ton' ? tonAddressFormatted : evmAddress

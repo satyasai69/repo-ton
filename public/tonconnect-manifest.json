@@ -1,10 +1,13 @@
 {
   "url": "http://localhost:5173",
-  "name": "Akira Bridge",
-  "iconUrl": "https://ton.org/download/ton_symbol.png",
+  "name": "Tonify",
+  "iconUrl": "http://localhost:5173/logo.png",
   "termsOfUseUrl": "http://localhost:5173/terms",
   "privacyPolicyUrl": "http://localhost:5173/privacy",
   "manifestVersion": "0.1",
+
+  "about": "Pumpie - AI-Powered Decentralized Trading Platform on TON",
+  "version": "1.0.0",
   "items": [
     {
       "name": "ton_addr",
@@ -14,5 +17,10 @@
       "name": "ton_proof",
       "required": false
     }
-  ]
+  ],
+  "platforms": [
+    "web"
+  ],
+  "redirectUrl": "http://localhost:5173"
+
 }

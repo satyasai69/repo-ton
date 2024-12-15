@@ -10,7 +10,7 @@ interface Props {
 const TonConnectProvider = ({ children, themeData }: Props) => {
   return (
     <TonConnectUIProvider
-      manifestUrl="https://tonify.app/tonconnect-manifest.json"
+      manifestUrl="http://localhost:5173/tonconnect-manifest.json"
       uiPreferences={{
         theme: THEME.DARK,
         borderRadius: "s",

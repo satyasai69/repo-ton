@@ -16,6 +16,9 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import * as SimpleIcons from 'simple-icons'
 import Navigation from "../../components/Navigation"
+import axios from 'axios';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 
 import { useWallet } from '../../context/WalletContext'
 
@@ -28,7 +31,7 @@ const networks = {
     bgColor: 'from-blue-500',
   },
  
-  ton: {
+  Ton: {
     name: 'TON',
     icon: SimpleIcons.siTon,
     color: '#0098EA',
@@ -37,9 +40,9 @@ const networks = {
 } as const
 
 const tokens = {
-  usdt: {
-    name: 'USDT',
-    icon: SimpleIcons.siTether,
+  ton: {
+    name: 'TON',
+    icon: SimpleIcons.siTon,
     color: '#26A17B',
     bgColor: 'from-emerald-500',
   },
@@ -59,19 +62,35 @@ export default function AppPage() {
   
   const [enableRefuel, setEnableRefuel] = useState(false)
   const [bridgeAndTransfer, setBridgeAndTransfer] = useState(false)
-  const [sourceNetwork, setSourceNetwork] = useState<NetworkType>('ton')
+  const [sourceNetwork, setSourceNetwork] = useState<NetworkType>('Ton')
   const [targetNetwork, setTargetNetwork] = useState<NetworkType>('ethereum')
-  const [sourceToken, setSourceToken] = useState<TokenType>('usdt')
-  const [targetToken, setTargetToken] = useState<TokenType>('usdt')
+  const [sourceToken, setSourceToken] = useState<TokenType>('ton')
+  const [targetToken, setTargetToken] = useState<TokenType>('eth')
   const [isEditingRecipient, setIsEditingRecipient] = useState(false)
   const [recipientAddress, setRecipientAddress] = useState('')
+  const [sendAmount, setSendAmount] = useState<string>('');
+  const [receiveAmount, setReceiveAmount] = useState<string>('');
+  const [conversionRate, setConversionRate] = useState<number>(0);
+  const [isLoadingRate, setIsLoadingRate] = useState(false);
+  const [sourceAmount, setSourceAmount] = useState('');
+  const [targetAmount, setTargetAmount] = useState('');
+  const [exchangeRate, setExchangeRate] = useState(0);
+  const [ethGasPrice, setEthGasPrice] = useState<string>('0');
+  const [tonGasPrice, setTonGasPrice] = useState<string>('0');
+  const [selectedNetwork, setSelectedNetwork] = useState<'mainnet' | 'testnet'>('mainnet');
 
   useEffect(() => {
     if (isConnected) {
       if (walletType === 'evm') {
         setSourceNetwork('ethereum');
+        setTargetNetwork('Ton');
+        setSourceToken('eth');
+        setTargetToken('ton');
       } else if (walletType === 'ton') {
-        setSourceNetwork('ton');
+        setSourceNetwork('Ton');
+        setTargetNetwork('ethereum');
+        setSourceToken('ton');
+        setTargetToken('eth');
       }
     }
   }, [isConnected, walletType]);
@@ -93,6 +112,181 @@ export default function AppPage() {
       setRecipientAddress(defaultAddress);
     }
   }, [isConnected, walletType, evmAddress, tonAddressFormatted, isEditingRecipient]);
+
+  const fetchTokenPrice = async () => {
+    setIsLoadingRate(true);
+    try {
+      // Using CoinGecko API for price data
+      const response = await axios.get(
+        'https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,ethereum&vs_currencies=usd'
+      );
+      
+      const tonUsdPrice = response.data['the-open-network']?.usd || 0;
+      const ethUsdPrice = response.data['ethereum']?.usd || 0;
+      
+      // Calculate rate based on source and target tokens
+      let rate = 0;
+      if (sourceToken === 'ton' && targetToken === 'eth') {
+        rate = tonUsdPrice / ethUsdPrice;
+      } else if (sourceToken === 'eth' && targetToken === 'ton') {
+        rate = ethUsdPrice / tonUsdPrice;
+      }
+      
+      setConversionRate(rate);
+      setExchangeRate(rate);
+      
+      // Update receive amount if send amount exists
+      if (sendAmount) {
+        const newReceiveAmount = (parseFloat(sendAmount) * rate).toFixed(6);
+        setReceiveAmount(newReceiveAmount);
+      }
+    } catch (error) {
+      console.error('Error fetching price:', error);
+    } finally {
+      setIsLoadingRate(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTokenPrice();
+  }, [sourceToken, targetToken]);
+
+  const handleNetworkChange = (network: NetworkType, isSource: boolean) => {
+    if (isSource) {
+      setSourceNetwork(network);
+      if (network === 'Ton') {
+        setTargetNetwork('ethereum');
+        setSourceToken('ton');
+        setTargetToken('eth');
+      } else {
+        setTargetNetwork('Ton');
+        setSourceToken('eth');
+        setTargetToken('ton');
+      }
+    } else {
+      setTargetNetwork(network);
+      if (network === 'Ton') {
+        setSourceNetwork('ethereum');
+        setSourceToken('eth');
+        setTargetToken('ton');
+      } else {
+        setSourceNetwork('Ton');
+        setSourceToken('ton');
+        setTargetToken('eth');
+      }
+    }
+    // Reset amounts
+    setSendAmount('');
+    setReceiveAmount('');
+    setSourceAmount('');
+    setTargetAmount('');
+  };
+
+  const handleSendAmountChange = (value: string) => {
+    setSendAmount(value);
+    if (value && conversionRate) {
+      const converted = (parseFloat(value) * conversionRate).toFixed(6);
+      setReceiveAmount(converted);
+    } else {
+      setReceiveAmount('');
+    }
+  };
+
+  const handleReceiveAmountChange = (value: string) => {
+    setReceiveAmount(value);
+    if (value && conversionRate) {
+      const converted = (parseFloat(value) / conversionRate).toFixed(6);
+      setSendAmount(converted);
+    } else {
+      setSendAmount('');
+    }
+  };
+
+  const handleSourceAmountChange = (value: string) => {
+    setSourceAmount(value);
+    if (value && conversionRate) {
+      const converted = (parseFloat(value) * conversionRate).toFixed(6);
+      setTargetAmount(converted);
+    } else {
+      setTargetAmount('');
+    }
+  };
+
+  const handleTargetAmountChange = (value: string) => {
+    setTargetAmount(value);
+    if (value && conversionRate) {
+      const converted = (parseFloat(value) / conversionRate).toFixed(6);
+      setSourceAmount(converted);
+    } else {
+      setSourceAmount('');
+    }
+  };
+
+  const fetchEthGasPrice = async () => {
+    try {
+      // For mainnet use Etherscan, for testnet (Goerli) use different endpoint
+      const baseUrl = selectedNetwork === 'mainnet' 
+        ? 'https://api.etherscan.io/api'
+        : 'https://api-goerli.etherscan.io/api';
+        
+      const response = await axios.get(baseUrl, {
+        params: {
+          module: 'gastracker',
+          action: 'gasoracle',
+          apikey: process.env.REACT_APP_ETHERSCAN_API_KEY
+        }
+      });
+      
+      if (response.data.status === '1') {
+        const proposeGasPrice = response.data.result.ProposeGasPrice;
+        setEthGasPrice(proposeGasPrice);
+      }
+    } catch (error) {
+      console.error('Error fetching ETH gas price:', error);
+    }
+  };
+
+  const fetchTonGasPrice = async () => {
+    try {
+      // Use different endpoints for mainnet and testnet
+      const baseUrl = selectedNetwork === 'mainnet'
+        ? 'https://toncenter.com/api/v2/estimateFee'
+        : 'https://testnet.toncenter.com/api/v2/estimateFee';
+
+      const response = await axios.get(baseUrl, {
+        params: {
+          address: tonAddress,
+          amount: '1000000000' // 1 TON in nanotons
+        },
+        headers: {
+          'X-API-Key': process.env.REACT_APP_TONCENTER_API_KEY
+        }
+      });
+      
+      if (response.data && response.data.ok) {
+        const fee = response.data.result.source_fees.in_fwd_fee;
+        const feeInTon = (parseInt(fee) / 1e9).toFixed(3);
+        setTonGasPrice(feeInTon);
+      }
+    } catch (error) {
+      console.error('Error fetching TON gas price:', error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchGasPrices = async () => {
+      if (sourceNetwork === 'ethereum') {
+        await fetchEthGasPrice();
+      } else {
+        await fetchTonGasPrice();
+      }
+    };
+
+    fetchGasPrices();
+    const interval = setInterval(fetchGasPrices, 15000); // Update every 15 seconds
+
+    return () => clearInterval(interval);
+  }, [sourceNetwork, tonAddress, selectedNetwork]);
 
   const NetworkIcon = ({ network, size = "md" }: { network: keyof typeof networks, size?: "sm" | "md" | "lg" }) => {
     const sizes = {
@@ -174,8 +368,18 @@ export default function AppPage() {
         </div>
 
         <div className="mt-8 relative z-10 flex flex-col items-center justify-center gap-4">
-          {isConnected && (
-            <Card className="w-full max-w-xl bg-white/80 backdrop-blur-sm border border-indigo-100/20 shadow-xl">
+      
+
+          <Card className="w-full max-w-xl bg-white/80 backdrop-blur-sm border border-indigo-100/20 shadow-xl">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-2xl font-bold">Bridge</CardTitle>
+              <Button variant="ghost" size="icon">
+                <Settings className="h-5 w-5" />
+              </Button>
+            </CardHeader>
+
+            {isConnected && (
+            <Card className="w-full relative">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -200,13 +404,7 @@ export default function AppPage() {
             </Card>
           )}
 
-          <Card className="w-full max-w-xl bg-white/80 backdrop-blur-sm border border-indigo-100/20 shadow-xl">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-2xl font-bold">Bridge</CardTitle>
-              <Button variant="ghost" size="icon">
-                <Settings className="h-5 w-5" />
-              </Button>
-            </CardHeader>
+
             <CardContent className="space-y-6">
               {/* Network Icons */}
               <div className="relative flex justify-center items-center py-8">
@@ -243,53 +441,69 @@ export default function AppPage() {
               </div>
 
               {/* Network Selection */}
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-gray-500">Network</span>
+                <Select value={selectedNetwork} onValueChange={(value: 'mainnet' | 'testnet') => setSelectedNetwork(value)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Select network" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mainnet">Mainnet</SelectItem>
+                    <SelectItem value="testnet">Testnet</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="grid grid-cols-[1fr,auto,1fr] gap-4 items-center">
                 <Select 
                   value={sourceNetwork} 
-                  onValueChange={(value: NetworkType) => setSourceNetwork(value)}
+                  onValueChange={(value: NetworkType) => handleNetworkChange(value, true)}
                 >
-                  <SelectTrigger className="h-14">
+                  <SelectTrigger className="h-14 bg-white border border-gray-200">
                     <div className="flex items-center gap-2">
-                
+                   
                       <SelectValue placeholder={networks[sourceNetwork].name} />
                     </div>
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-gray-200 shadow-lg rounded-lg">
                     {Object.entries(networks).map(([key, network]) => (
-                      <SelectItem key={key} value={key}>
+                      <SelectItem key={key} value={key} className="hover:bg-gray-50 cursor-pointer">
                         <div className="flex items-center gap-2">
-                          <div className={`w-6 h-6 bg-gradient-to-br ${network.bgColor} to-white rounded-lg flex items-center justify-center`}>
-                            <NetworkIcon network={key as keyof typeof networks} size="sm" />
-                          </div>
-                          {network.name}
+                          <NetworkIcon network={key as keyof typeof networks} size="md" />
+                          <span className="font-medium">{network.name}</span>
                         </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
-                <Button variant="ghost" size="icon" className="rounded-full">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="rounded-full"
+                  onClick={() => {
+                    handleNetworkChange(targetNetwork, true);
+                  }}
+                >
                   <ArrowUpDown className="h-5 w-5" />
                 </Button>
 
                 <Select 
                   value={targetNetwork} 
-                  onValueChange={(value: NetworkType) => setTargetNetwork(value)}
+                  onValueChange={(value: NetworkType) => handleNetworkChange(value, false)}
                 >
-                  <SelectTrigger className="h-14">
+                  <SelectTrigger className="h-14 bg-white border border-gray-200">
                     <div className="flex items-center gap-2">
-                
+                   
                       <SelectValue placeholder={networks[targetNetwork].name} />
                     </div>
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-gray-200 shadow-lg rounded-lg">
                     {Object.entries(networks).map(([key, network]) => (
-                      <SelectItem key={key} value={key}>
+                      <SelectItem key={key} value={key} className="hover:bg-gray-50 cursor-pointer">
                         <div className="flex items-center gap-2">
-                          <div className={`w-6 h-6 bg-gradient-to-br ${network.bgColor} to-white rounded-lg flex items-center justify-center`}>
-                            <NetworkIcon network={key as keyof typeof networks} size="sm" />
-                          </div>
-                          {network.name}
+                          <NetworkIcon network={key as keyof typeof networks} size="md" />
+                          <span className="font-medium">{network.name}</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -297,146 +511,108 @@ export default function AppPage() {
                 </Select>
               </div>
 
-              {/* Amount Input - Send */}
-              <div className="space-y-2">
-                <Label>You send</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    type="number" 
-                    placeholder="0.00" 
-                    className="h-14"
-                  />
-                  <Select 
-                    value={sourceToken} 
-                    onValueChange={(value: TokenType) => setSourceToken(value)}
-                  >
-                    <SelectTrigger className="w-[120px] h-14 bg-white">
+              {/* Amount Inputs */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>You send</Label>
+                  <div className="flex gap-4">
+                    <Input
+                      type="number"
+                      placeholder={`Enter amount in ${networks[sourceNetwork].name}`}
+                      className="flex-1 h-14"
+                      value={sourceAmount}
+                      onChange={(e) => handleSourceAmountChange(e.target.value)}
+                    />
+                    <div className="w-[120px] h-14 bg-white rounded-md border border-input flex items-center px-3">
                       <div className="flex items-center gap-2">
                         <div className={`w-8 h-8 bg-gradient-to-br ${tokens[sourceToken].bgColor} to-white rounded-lg flex items-center justify-center`}>
                           <TokenIcon token={sourceToken} size="md" />
                         </div>
                         <span className="text-sm font-medium">{tokens[sourceToken].name}</span>
                       </div>
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border shadow-lg">
-                      {Object.entries(tokens).map(([key, token]) => (
-                        <SelectItem 
-                          key={key} 
-                          value={key}
-                          className="hover:bg-gray-50"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className={`w-6 h-6 bg-gradient-to-br ${token.bgColor} to-white rounded-lg flex items-center justify-center`}>
-                              <TokenIcon token={key as keyof typeof tokens} size="sm" />
-                            </div>
-                            <span className="text-sm font-medium">{token.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  </div>
+                  {isConnected && (
+                    <div className="text-sm text-gray-500">
+                      Balance: {walletType === 'ton' ? `${tonBalance} TON` : `${evmBalance} ETH`}
+                    </div>
+                  )}
                 </div>
-           
-              </div>
 
-              {/* Amount Input - Receive */}
-              <div className="space-y-2">
-                <Label>You receive</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    type="number" 
-                    placeholder="0.00" 
+                <div className="space-y-2">
+                  <Label>Recipient Address</Label>
+                  <Input
+                    placeholder={
+                      isConnected
+                        ? walletType === 'ton'
+                          ? 'Enter Ethereum Address (0x...)'
+                          : 'Enter TON Address (EQ...)'
+                        : 'Connect wallet first'
+                    }
                     className="h-14"
                   />
-                  <Select 
-                    value={targetToken} 
-                    onValueChange={(value: TokenType) => setTargetToken(value)}
-                  >
-                    <SelectTrigger className="w-[120px] h-14 bg-white">
+                  {isConnected && (
+                    <div className="text-sm text-gray-500">
+                      Connected as: {walletType === 'ton' ? tonAddressFormatted : evmAddress}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>You receive</Label>
+                  <div className="flex gap-4">
+                    <Input
+                      type="number"
+                      placeholder={`Enter amount in ${networks[targetNetwork].name}`}
+                      className="flex-1 h-14"
+                      value={targetAmount}
+                      onChange={(e) => handleTargetAmountChange(e.target.value)}
+                    />
+                    <div className="w-[120px] h-14 bg-white rounded-md border border-input flex items-center px-3">
                       <div className="flex items-center gap-2">
                         <div className={`w-8 h-8 bg-gradient-to-br ${tokens[targetToken].bgColor} to-white rounded-lg flex items-center justify-center`}>
                           <TokenIcon token={targetToken} size="md" />
                         </div>
                         <span className="text-sm font-medium">{tokens[targetToken].name}</span>
                       </div>
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border shadow-lg">
-                      {Object.entries(tokens).map(([key, token]) => (
-                        <SelectItem 
-                          key={key} 
-                          value={key}
-                          className="hover:bg-gray-50"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className={`w-6 h-6 bg-gradient-to-br ${token.bgColor} to-white rounded-lg flex items-center justify-center`}>
-                              <TokenIcon token={key as keyof typeof tokens} size="sm" />
-                            </div>
-                            <span className="text-sm font-medium">{token.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Recipient Address */}
-              <div className="space-y-2">
-                <Label>Recipient Address</Label>
-                <div className="relative">
-                  <Input
-                    value={recipientAddress}
-                    onChange={(e) => isEditingRecipient && setRecipientAddress(e.target.value)}
-                    className={`h-14 font-mono text-sm ${!isEditingRecipient ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-                    disabled={!isEditingRecipient}
-                    placeholder="Enter recipient address"
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10"
-                    onClick={() => {
-                      if (isEditingRecipient) {
-                        // If we're ending edit mode, reset to default address
-                        setRecipientAddress(getDefaultRecipientAddress());
-                      }
-                      setIsEditingRecipient(!isEditingRecipient);
-                    }}
-                  >
-                    {isEditingRecipient ? (
-                      <X className="h-4 w-4" />
-                    ) : (
-                      <Edit2 className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Enable Refuel */}
-              <div className="flex items-center justify-between py-2">
-                <div className="flex items-center gap-2">
-                  <RefreshCw className="h-5 w-5 text-purple-600" />
-                  <div>
-                    <div className="font-medium">Enable Refuel</div>
-                    <div className="text-sm text-gray-500">Refuel isn't supported on Ethereum</div>
+                    </div>
                   </div>
+                  {isConnected && targetNetwork === 'ethereum' && (
+                    <div className="text-sm text-gray-500">
+                      Gas Fee: ~0.001 ETH
+                    </div>
+                  )}
                 </div>
-                <Switch
-                  checked={enableRefuel}
-                  onCheckedChange={setEnableRefuel}
-                />
               </div>
 
-              {/* Bridge and Transfer Toggle */}
-              <div className="flex items-center justify-between py-2 border-t">
-                <div className="font-medium">Bridge and transfer</div>
-                <Switch
-                  checked={bridgeAndTransfer}
-                  onCheckedChange={setBridgeAndTransfer}
-                />
-              </div>
+              {/* Bridge Info */}
+              <div className="space-y-4 py-4 border-t">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Exchange Rate</span>
+                  <span className="font-medium">
+                    1 {tokens[sourceToken].name} ≈ {exchangeRate.toFixed(6)} {tokens[targetToken].name}
+                  </span>
+                </div>
 
-           
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Network Fee</span>
+                  <span className="font-medium">
+                    {sourceNetwork === 'ethereum' 
+                      ? `~${ethGasPrice} ETH (${selectedNetwork})` 
+                      : `~${tonGasPrice} TON (${selectedNetwork})`}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Network</span>
+                  <span className="font-medium capitalize">{selectedNetwork}</span>
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Estimated Time</span>
+                  <span className="font-medium">2-5 minutes</span>
+                </div>
+              </div>
 
               {/* Approve Button */}
               <Button className="w-full h-12 text-lg bg-purple-600 hover:bg-purple-700">
@@ -446,6 +622,62 @@ export default function AppPage() {
           </Card>
         </div>
       </div>
+      <Dialog>
+        <DialogTrigger asChild>
+          <span id="wallet-modal" className="hidden" />
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md bg-white rounded-xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-900">Connect Wallet</DialogTitle>
+            <DialogDescription className="text-gray-500">
+              Choose your preferred wallet to connect
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <button
+              onClick={() => {
+                tonConnectUI.connectWallet();
+                setIsOpen(false);
+              }}
+              className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+            >
+              <div className="w-8 h-8 rounded-full bg-[#0098EA]/10 flex items-center justify-center">
+                <div
+                  dangerouslySetInnerHTML={{ 
+                    __html: SimpleIcons.siTon.svg 
+                  }}
+                  className="w-5 h-5"
+                  style={{ color: '#0098EA' }}
+                />
+              </div>
+              <div>
+                Connect TON Wallet
+              </div>
+            </button>
+
+            <ConnectButton.Custom>
+              {({
+                openConnectModal,
+              }) => (
+                <button
+                  onClick={openConnectModal}
+                  className="w-full h-16 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl transition-all hover:shadow-lg flex items-center px-4 group"
+                >
+                  <div className="flex items-center gap-3 w-full">
+                    <div className="w-10 h-10 rounded-full bg-[#627EEA]/10 flex items-center justify-center">
+                      <img src="/ethereum.svg" alt="Ethereum" className="w-6 h-6" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="font-semibold text-gray-900 group-hover:text-[#627EEA]">Ethereum Wallet</div>
+                      <div className="text-sm text-gray-500">MetaMask, WalletConnect, etc.</div>
+                    </div>
+                  </div>
+                </button>
+              )}
+            </ConnectButton.Custom>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
