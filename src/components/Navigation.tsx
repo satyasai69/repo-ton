@@ -35,15 +35,15 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
-  const [isConnectModalOpen, setIsConnectModalOpen] = useState(false)
+  const [ ,setIsConnectModalOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const isAppPage = location.pathname.startsWith('/app')
 
   useEffect(() => {
     const checkConnection = () => {
-      if (tonConnectUI.connected) {
-        setIsConnected(true)
+      if (tonConnectUI.connected || evmAddress) {
+        setIsConnected(true) 
         setIsOpen(false)
         navigate('/app')
       } else {
@@ -56,7 +56,7 @@ export default function Navigation() {
     return () => {
       if (unsubscribe) unsubscribe()
     }
-  }, [tonConnectUI, navigate])
+  }, [tonConnectUI, navigate,evmAddress])
 
   useEffect(() => {
     const handleConnectionChange = () => {
@@ -78,7 +78,7 @@ export default function Navigation() {
         await tonConnectUI.disconnect()
         setIsConnectModalOpen(false)
       } else {
-        disconnect()
+        disconnect?.()
       }
       setIsOpen(false)
       setIsConnected(false)

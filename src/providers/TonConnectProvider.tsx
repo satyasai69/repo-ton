@@ -1,5 +1,5 @@
-import { TonConnectUIProvider } from '@tonconnect/ui-react'
-import { THEME } from '@tonconnect/ui-react'
+import { THEME, TonConnectUIProvider } from '@tonconnect/ui-react'
+
 import { ReactNode } from 'react'
 
 interface Props {
@@ -7,10 +7,11 @@ interface Props {
   themeData?: any
 }
 
-const TonConnectProvider = ({ children, themeData }: Props) => {
+const TonConnectProvider = ({ children }: Props) => {
   const manifestUrl = 'http://localhost:5173/tonconnect-manifest.json';
   
   const uiPreferences = {
+    theme: THEME.DARK,
     modalWidth: 400,
     collapseButtonEnabled: true,
     actionsConfiguration: {
