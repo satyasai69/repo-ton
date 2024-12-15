@@ -35,6 +35,7 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
+  const [isConnectModalOpen, setIsConnectModalOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const isAppPage = location.pathname.startsWith('/app')
@@ -57,10 +58,25 @@ export default function Navigation() {
     }
   }, [tonConnectUI, navigate])
 
+  useEffect(() => {
+    const handleConnectionChange = () => {
+      if (tonConnectUI.connected) {
+        setIsConnectModalOpen(false)
+        setIsOpen(false)
+      }
+    }
+
+    const unsubscribe = tonConnectUI.onStatusChange(handleConnectionChange)
+    return () => {
+      if (unsubscribe) unsubscribe()
+    }
+  }, [tonConnectUI])
+
   const handleDisconnect = async () => {
     try {
       if (walletType === 'ton') {
         await tonConnectUI.disconnect()
+        setIsConnectModalOpen(false)
       } else {
         disconnect()
       }
@@ -76,6 +92,7 @@ export default function Navigation() {
     try {
       await tonConnectUI.openModal()
       setIsOpen(false)
+      setIsConnectModalOpen(false)
     } catch (error) {
       console.error('Connection failed:', error)
     }
@@ -128,7 +145,7 @@ export default function Navigation() {
                 {!isConnected ? (
                   <button
                     onClick={() => setIsOpen(!isOpen)}
-                    className="px-4 py-2 rounded-lg bg-black text-white hover:bg-gray-800 transition-all hover:scale-105"
+                    className="px-4 py-2 rounded-xl bg-black text-white hover:bg-gray-800 transition-all hover:scale-105"
                   >
                     Connect Wallet
                   </button>

@@ -8,26 +8,25 @@ interface Props {
 }
 
 const TonConnectProvider = ({ children, themeData }: Props) => {
+  const manifestUrl = 'http://localhost:5173/tonconnect-manifest.json';
+  
+  const uiPreferences = {
+    modalWidth: 400,
+    collapseButtonEnabled: true,
+    actionsConfiguration: {
+      modals: {
+        connection: {
+          closeOnOverlayClick: true,
+          closeOnEsc: true,
+        },
+      },
+    },
+  };
+
   return (
     <TonConnectUIProvider
-      manifestUrl="http://localhost:5173/tonconnect-manifest.json"
-      uiPreferences={{
-        theme: THEME.DARK,
-        borderRadius: "s",
-        colorsSet: {
-          DARK: {
-            constant: {
-              black: "#000000",
-              white: "#f1f1f1",
-            },
-            connectButton: {
-              background: "#1570ef",
-              foreground: "#ffffff",
-            },
-            accent: themeData?.accent,
-          },
-        },
-      }}
+      manifestUrl={manifestUrl}
+      uiPreferences={uiPreferences}
     >
       {children}
     </TonConnectUIProvider>
