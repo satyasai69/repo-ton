@@ -1,5 +1,6 @@
 "use client"
 
+import "../../polyfills";
 import { useState, useEffect } from "react"
 import { ArrowUpDown, Edit2, RefreshCw, Settings, Wallet, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
@@ -19,8 +20,21 @@ import Navigation from "../../components/Navigation"
 import axios from 'axios';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { parseEther, stringToBytes, encodeAbiParameters, toHex } from 'viem';
 
 import { useWallet } from '../../context/WalletContext'
+
+import { useContractWrite } from 'wagmi'
+import { abi } from '../../contractData/abi'
+
+//Ton imports
+
+import { Bridge } from "../../contractData/tact_bridge";
+import TonConnectSender from "@/hooks/TonConnectSender";
+import { getHttpEndpoint } from "@orbs-network/ton-access";
+import { Sender,Address, toNano } from "@ton/core";
+import { TonClient } from "@ton/ton";
+import { TonConnectButton, useTonConnectUI } from "@tonconnect/ui-react";
 
 const networks = {
  
@@ -58,6 +72,11 @@ type NetworkType = keyof typeof networks
 type TokenType = keyof typeof tokens
 
 export default function AppPage() {
+  const { write } = useContractWrite({
+    abi,
+    address: '0x892E3618808D42875a3f9Cd64f3140E5C9d9BdeC',
+    functionName: 'Deposit',
+  })
   const { isConnected, walletType, evmAddress, tonAddress, tonAddressFormatted, evmBalance, tonBalance } = useWallet()
   
   const [enableRefuel, setEnableRefuel] = useState(false)
@@ -67,7 +86,7 @@ export default function AppPage() {
   const [sourceToken, setSourceToken] = useState<TokenType>('ton')
   const [targetToken, setTargetToken] = useState<TokenType>('eth')
   const [isEditingRecipient, setIsEditingRecipient] = useState(false)
-  const [recipientAddress, setRecipientAddress] = useState('')
+  const [recipientAddress, setRecipientAddress] = useState('');
   const [sendAmount, setSendAmount] = useState<string>('');
   const [receiveAmount, setReceiveAmount] = useState<string>('');
   const [conversionRate, setConversionRate] = useState<number>(0);
@@ -78,6 +97,48 @@ export default function AppPage() {
   const [ethGasPrice, setEthGasPrice] = useState<string>('0');
   const [tonGasPrice, setTonGasPrice] = useState<string>('0');
   const [selectedNetwork, setSelectedNetwork] = useState<'mainnet' | 'testnet'>('mainnet');
+
+
+  //ton
+  const [tonConnector] = useTonConnectUI();
+  const [val, setVal] = useState<null | number>(null);
+  const [showVal, setShowVal] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+
+    // Update or increment function
+    const updateData = async () => {
+      setVal(null);
+      setShowVal(false);
+  
+      let sender: Sender | null = null;
+      sender = new TonConnectSender(tonConnector.connector);
+  
+      const endpoint = await getHttpEndpoint({
+        network: "testnet",
+      });
+  
+      const client = new TonClient({ endpoint });
+
+        const bridgeAddress = "EQAwGc6IS3ynTnvDC2Ie_4TmWtT8COhTsEhCG1l0DUNHLkgZ";
+        const address = Address.parse(bridgeAddress);
+  
+    //  const tactCounter = client.open(await Bridge.fromInit(BigInt(1)));
+    const tactCounter = client.open(Bridge.fromAddress(address));
+   const total = sourceAmount + 0;
+      await tactCounter.send(
+        sender,
+        {
+          value: toNano(total),
+        },
+        {
+          $$type: 'Deposit',
+          queryId: 1n,
+          evmAddress:  BigInt(`0x${recipientAddress.replace(/^0x/, '')}`), // 0x2373a942FEbC0ee428b266bDD58275794E7f1553n,
+        }
+      );
+    };
+
+  //
 
   useEffect(() => {
     if (isConnected) {
@@ -550,6 +611,8 @@ export default function AppPage() {
                         : 'Connect wallet first'
                     }
                     className="h-14"
+                    value={recipientAddress}
+                    onChange={(e) => setRecipientAddress(e.target.value)}
                   />
                   {isConnected && (
                     <div className="text-sm text-gray-500">
@@ -615,9 +678,28 @@ export default function AppPage() {
               </div>
 
               {/* Approve Button */}
-              <Button className="w-full h-12 text-lg bg-purple-600 hover:bg-purple-700">
-                Approve
-              </Button>
+              {sourceNetwork === 'ethereum' ? (
+                <Button 
+                  className="w-full h-12 text-lg bg-purple-600 hover:bg-purple-700"
+                  onClick={() => {
+                    if (!recipientAddress) return;
+                    const bytes = new TextEncoder().encode(recipientAddress);
+                    const hexBytes = toHex(bytes);
+                    write({
+                      args: [
+                        hexBytes,
+                      ],
+                      value: parseEther(sourceAmount)
+                    })
+                  }}
+                >
+                  ETH
+                </Button>
+              ) : (
+                <Button className="w-full h-12 text-lg bg-purple-600 hover:bg-purple-700" onClick={updateData}>
+                  TON
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
