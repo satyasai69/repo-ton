@@ -119,7 +119,7 @@ export default function AppPage() {
   
       const client = new TonClient({ endpoint });
 
-        const bridgeAddress = "EQAwGc6IS3ynTnvDC2Ie_4TmWtT8COhTsEhCG1l0DUNHLkgZ";
+        const bridgeAddress = "EQC5VbDkxWtR1DdoGK6H5gLyfHXQv-G0Hv1SuW78Alxn67Ky";
         const address = Address.parse(bridgeAddress);
   
     //  const tactCounter = client.open(await Bridge.fromInit(BigInt(1)));
